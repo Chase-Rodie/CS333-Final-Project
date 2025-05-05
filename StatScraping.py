@@ -83,6 +83,7 @@ def loginFunction(connection):
 
 #signs users up
 def signupFunction(connection):
+    cursor = None
     try:
         cursor = connection.cursor()
         userid = input("Welcome to the NBA database please create a username to proceed: ").strip()
@@ -229,6 +230,7 @@ def matchupStatDisplay(connection):
 
 #gives user option to add feeback
 def addFeedback(connection, userid):
+    cursor = None
     try:
         cursor = connection.cursor()
         while True:
