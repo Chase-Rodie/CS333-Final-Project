@@ -75,7 +75,7 @@ def test_playoff_stat_display_found(monkeypatch):
 @patch("StatScraping.requests.get")
 def test_regular_stats_failure(mock_get):
     mock_response = MagicMock()
-    mock_response.status_code = 500  # Simulate failure
+    mock_response.status_code = 500  
     mock_get.return_value = mock_response
 
     regularStats()
@@ -84,7 +84,7 @@ def test_regular_stats_failure(mock_get):
 @patch("StatScraping.requests.get")
 def test_playoff_stats_failure(mock_get):
     mock_response = MagicMock()
-    mock_response.status_code = 403  # Forbidden or similar
+    mock_response.status_code = 403  
     mock_get.return_value = mock_response
 
     from StatScraping import playoffStats
@@ -121,7 +121,7 @@ def test_playoff_stat_display_yes_continue(monkeypatch):
 
     result = playoffStatDisplay(mock_connection)
     assert result is False
-    assert mock_cursor.execute.call_count == 1  # Only one query due to 'exit' on second loop
+    assert mock_cursor.execute.call_count == 1  
 
 def test_regular_stat_display_found(monkeypatch):
     mock_cursor = MagicMock()
@@ -159,7 +159,7 @@ def test_regular_stat_display_not_found(monkeypatch):
 @patch("StatScraping.requests.get")
 def test_playoff_stats_failure(mock_get):
     mock_response = MagicMock()
-    mock_response.status_code = 500  # Simulate failure
+    mock_response.status_code = 500 
     mock_get.return_value = mock_response
 
     playoffStats()

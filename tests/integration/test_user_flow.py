@@ -11,7 +11,7 @@ def test_signup_login_add_feedback(monkeypatch):
 
     # -------- SIGNUP --------
     monkeypatch.setattr('builtins.input', lambda _: 'testuser1')
-    mock_cursor.fetchone.return_value = None  # user doesn't exist yet
+    mock_cursor.fetchone.return_value = None  
 
     user_id = signupFunction(mock_connection)
     assert user_id == 'testuser1'

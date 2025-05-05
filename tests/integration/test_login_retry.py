@@ -16,7 +16,7 @@ def test_login_retry(monkeypatch):
     mock_cursor.fetchone.side_effect = [None, ('gooduser',)]
 
     result1 = loginFunction(mock_connection)
-    assert result1 is None  # First attempt fails
+    assert result1 is None 
 
     result2 = loginFunction(mock_connection)
     assert result2 == 'gooduser'

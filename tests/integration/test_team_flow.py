@@ -16,7 +16,7 @@ def test_login_and_team_stat_display(monkeypatch):
     assert user == 'nbaFan99'
 
     # Team stat display
-    inputs = iter(['Los Angeles Lakers', 'no'])  # Team name, then exit
+    inputs = iter(['Los Angeles Lakers', 'no'])  
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     mock_cursor.fetchall.return_value = [

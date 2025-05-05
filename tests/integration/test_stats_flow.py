@@ -18,7 +18,7 @@ def test_login_and_regular_stat_display(monkeypatch):
     mock_cursor.execute.assert_called_with('SELECT userid FROM "User Info" WHERE userid = %s', ('lebron23',))
 
     # ---- Simulate stat lookup ----
-    inputs = iter(['LeBron James', 'no'])  # Player name, then exit
+    inputs = iter(['LeBron James', 'no'])  
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
     # Return mock player data

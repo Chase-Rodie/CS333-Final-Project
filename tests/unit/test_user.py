@@ -42,7 +42,7 @@ def test_signup_existing_user(monkeypatch):
 
 def test_signup_db_exception(monkeypatch):
     mock_connection = MagicMock()
-    mock_connection.cursor.side_effect = psycopg2.Error("DB error")  # 👈 FIXED
+    mock_connection.cursor.side_effect = psycopg2.Error("DB error") 
 
     monkeypatch.setattr('builtins.input', lambda _: 'userfail')
 
