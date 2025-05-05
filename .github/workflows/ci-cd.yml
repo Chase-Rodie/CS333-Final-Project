@@ -33,9 +33,14 @@ jobs:
           name: coverage-report
           path: coverage.xml
 
-      - name: Deploy to AWS S3
-        run: aws s3 sync ./build s3://your-bucket-name --delete
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Package and simulate deployment
+        run: |
+          mkdir -p deploy
+          zip -r deploy/project.zip StatScraping.py tests
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployed-package
+          path: deploy/project.zip
 
