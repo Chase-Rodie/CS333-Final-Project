@@ -10,6 +10,28 @@ jobs:
   build-test-deploy:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: testdb
+      DB_USER: testuser
+      DB_PASSWORD: testpass
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -24,8 +46,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-cov psycopg2-binary requests pandas openpyxl beautifulsoup4
 
+      - name: Wait for DB to be ready
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for Postgres..."
+            sleep 2
+          done
+
       - name: Run tests with coverage
-        run: PYTHONPATH=. pytest --cov=StatScraping --cov-report=xml
+        run: PYTHONPATH=. pytest --cov=. --cov-report=xml
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -36,7 +65,7 @@ jobs:
       - name: Package and simulate deployment
         run: |
           mkdir -p deploy
-          zip -r deploy/project.zip StatScraping.py tests
+          zip -r deploy/project.zip *.py tests
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
