@@ -1,22 +1,34 @@
-# tests/integration/test_login_retry.py
+# tests/integration/test_login_retry_integration.py
 
-from unittest.mock import MagicMock
+import psycopg2
 from StatScraping import loginFunction
 
-def test_login_retry(monkeypatch):
-    mock_cursor = MagicMock()
-    mock_connection = MagicMock()
-    mock_connection.cursor.return_value = mock_cursor
+def test_login_retry_real_db(monkeypatch):
+    connection = psycopg2.connect(
+        host="localhost",
+        port=5432,
+        database="your_test_db",
+        user="your_test_user",
+        password="your_test_password"
+    )
 
-    # First input = bad user, Second input = valid user
+    cursor = connection.cursor()
+    cursor.execute('DELETE FROM "User Info" WHERE userid IN (%s, %s)', ('wronguser', 'gooduser'))
+    cursor.execute('INSERT INTO "User Info" (userid) VALUES (%s)', ('gooduser',))
+    connection.commit()
+
     inputs = iter(['wronguser', 'gooduser'])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
 
-    # Simulate first fetch returns None, second returns valid user
-    mock_cursor.fetchone.side_effect = [None, ('gooduser',)]
+    result1 = loginFunction(connection)
+    assert result1 is None
 
-    result1 = loginFunction(mock_connection)
-    assert result1 is None 
-
-    result2 = loginFunction(mock_connection)
+    result2 = loginFunction(connection)
     assert result2 == 'gooduser'
+
+    # Cleanup
+    cursor.execute('DELETE FROM "User Info" WHERE userid IN (%s, %s)', ('wronguser', 'gooduser'))
+    connection.commit()
+    cursor.close()
+    connection.close()
+

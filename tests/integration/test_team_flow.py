@@ -1,32 +1,55 @@
-# tests/integration/test_team_flow.py
-
-from unittest.mock import MagicMock
+import os
+import psycopg2
+import unittest
 from StatScraping import loginFunction, teamStatDisplay
 
-def test_login_and_team_stat_display(monkeypatch):
-    mock_cursor = MagicMock()
-    mock_connection = MagicMock()
-    mock_connection.cursor.return_value = mock_cursor
+class TestTeamFlowIntegration(unittest.TestCase):
+    def setUp(self):
+        self.conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "localhost"),
+            port=os.getenv("DB_PORT", 5432),
+            dbname=os.getenv("DB_NAME", "testdb"),
+            user=os.getenv("DB_USER", "testuser"),
+            password=os.getenv("DB_PASSWORD", "testpass")
+        )
+        self.cursor = self.conn.cursor()
 
-    # Login
-    monkeypatch.setattr('builtins.input', lambda _: 'nbaFan99')
-    mock_cursor.fetchone.return_value = ('nbaFan99',)
+        # Insert test user
+        self.cursor.execute(
+            'INSERT INTO "User Info" (userid) VALUES (%s) ON CONFLICT DO NOTHING',
+            ('nbaFan99',)
+        )
 
-    user = loginFunction(mock_connection)
-    assert user == 'nbaFan99'
+        # Insert team stat
+        self.cursor.execute(
+            '''
+            INSERT INTO "Team Stats" ("Rk", "Team", "Overall", "Home", "Road")
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
+            ''',
+            (1, 'Los Angeles Lakers', '52-30', '30-11', '22-19')
+        )
 
-    # Team stat display
-    inputs = iter(['Los Angeles Lakers', 'no'])  
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+        self.conn.commit()
 
-    mock_cursor.fetchall.return_value = [
-        (1, 'Los Angeles Lakers', '52-30', '30-11', '22-19')
-    ]
+    def tearDown(self):
+        self.cursor.execute('DELETE FROM "User Info" WHERE userid = %s', ('nbaFan99',))
+        self.cursor.execute('DELETE FROM "Team Stats" WHERE "Team" = %s', ('Los Angeles Lakers',))
+        self.conn.commit()
+        self.cursor.close()
+        self.conn.close()
 
-    result = teamStatDisplay(mock_connection)
-    assert result is True
+    def test_login_and_team_stat_display(self):
+        input_sequence = iter(['nbaFan99', 'Los Angeles Lakers', 'no'])
+        original_input = __builtins__.input
+        __builtins__.input = lambda _: next(input_sequence)
 
-    mock_cursor.execute.assert_called_with(
-        'SELECT "Rk", "Team", "Overall", "Home", "Road" FROM "Team Stats" WHERE "Team" ILIKE %s',
-        ('Los Angeles Lakers',)
-    )
+        try:
+            user = loginFunction(self.conn)
+            self.assertEqual(user, 'nbaFan99')
+
+            result = teamStatDisplay(self.conn)
+            self.assertTrue(result)
+        finally:
+            __builtins__.input = original_input
+

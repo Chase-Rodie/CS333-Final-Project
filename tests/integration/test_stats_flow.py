@@ -1,34 +1,56 @@
-# tests/integration/test_stat_flow.py
-
-from unittest.mock import MagicMock
+import os
+import psycopg2
+import unittest
 from StatScraping import loginFunction, regularStatDisplay
 
-def test_login_and_regular_stat_display(monkeypatch):
-    # ---- Setup: Mock connection and cursor ----
-    mock_cursor = MagicMock()
-    mock_connection = MagicMock()
-    mock_connection.cursor.return_value = mock_cursor
+class TestStatFlowIntegration(unittest.TestCase):
+    def setUp(self):
+        self.conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "localhost"),
+            port=os.getenv("DB_PORT", 5432),
+            dbname=os.getenv("DB_NAME", "testdb"),
+            user=os.getenv("DB_USER", "testuser"),
+            password=os.getenv("DB_PASSWORD", "testpass")
+        )
+        self.cursor = self.conn.cursor()
 
-    # ---- Simulate user login ----
-    monkeypatch.setattr('builtins.input', lambda _: 'lebron23')
-    mock_cursor.fetchone.return_value = ('lebron23',)
+        # Insert test user
+        self.cursor.execute(
+            'INSERT INTO "User Info" (userid) VALUES (%s) ON CONFLICT DO NOTHING',
+            ('lebron23',)
+        )
 
-    user = loginFunction(mock_connection)
-    assert user == 'lebron23'
-    mock_cursor.execute.assert_called_with('SELECT userid FROM "User Info" WHERE userid = %s', ('lebron23',))
+        # Insert player stat
+        self.cursor.execute(
+            '''
+            INSERT INTO "Regular Season Stats 23-24" ("RANK", "PLAYER", "TEAM", "PTS", "REB", "AST")
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
+            ''',
+            (1, 'LeBron James', 'LAL', 28.5, 7.2, 8.1)
+        )
 
-    # ---- Simulate stat lookup ----
-    inputs = iter(['LeBron James', 'no'])  
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+        self.conn.commit()
 
-    # Return mock player data
-    mock_cursor.fetchall.return_value = [
-        (1, 'LeBron James', 'LAL', 28.5, 7.2, 8.1)
-    ]
+    def tearDown(self):
+        self.cursor.execute('DELETE FROM "User Info" WHERE userid = %s', ('lebron23',))
+        self.cursor.execute('DELETE FROM "Regular Season Stats 23-24" WHERE "PLAYER" = %s', ('LeBron James',))
+        self.conn.commit()
+        self.cursor.close()
+        self.conn.close()
 
-    result = regularStatDisplay(mock_connection)
-    assert result is True
-    mock_cursor.execute.assert_called_with(
-        'SELECT "RANK", "PLAYER", "TEAM", "PTS", "REB", "AST" FROM "Regular Season Stats 23-24" WHERE "PLAYER" ILIKE %s',
-        ('LeBron James',)
-    )
+    def test_login_and_stat_display(self):
+        # Simulate login input
+        input_sequence = iter(['lebron23', 'LeBron James', 'no'])
+        original_input = __builtins__.input
+        __builtins__.input = lambda _: next(input_sequence)
+
+        try:
+            user = loginFunction(self.conn)
+            self.assertEqual(user, 'lebron23')
+
+            result = regularStatDisplay(self.conn)
+            self.assertTrue(result)
+        finally:
+            __builtins__.input = original_input
+

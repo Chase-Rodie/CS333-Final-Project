@@ -1,36 +1,57 @@
-# tests/integration/test_user_flow.py
-
-from unittest.mock import MagicMock
+import os
+import psycopg2
+import unittest
 from StatScraping import signupFunction, loginFunction, addFeedback
 
-def test_signup_login_add_feedback(monkeypatch):
-    # Mock database connection and cursor
-    mock_cursor = MagicMock()
-    mock_connection = MagicMock()
-    mock_connection.cursor.return_value = mock_cursor
+class TestUserFlowIntegration(unittest.TestCase):
+    def setUp(self):
+        self.conn = psycopg2.connect(
+            host=os.getenv("DB_HOST", "localhost"),
+            port=os.getenv("DB_PORT", 5432),
+            dbname=os.getenv("DB_NAME", "testdb"),
+            user=os.getenv("DB_USER", "testuser"),
+            password=os.getenv("DB_PASSWORD", "testpass")
+        )
+        self.cursor = self.conn.cursor()
 
-    # -------- SIGNUP --------
-    monkeypatch.setattr('builtins.input', lambda _: 'testuser1')
-    mock_cursor.fetchone.return_value = None  
+        # Clean up just in case
+        self.cursor.execute('DELETE FROM "User Info" WHERE userid = %s', ('testuser1',))
+        self.conn.commit()
 
-    user_id = signupFunction(mock_connection)
-    assert user_id == 'testuser1'
-    mock_cursor.execute.assert_any_call('INSERT INTO "User Info" (userid) VALUES (%s)', ('testuser1',))
+    def tearDown(self):
+        self.cursor.execute('DELETE FROM "User Info" WHERE userid = %s', ('testuser1',))
+        self.conn.commit()
+        self.cursor.close()
+        self.conn.close()
 
-    # -------- LOGIN --------
-    monkeypatch.setattr('builtins.input', lambda _: 'testuser1')
-    mock_cursor.fetchone.return_value = ('testuser1',)
+    def test_signup_login_add_feedback(self):
+        # Simulate user inputs for signup, login, feedback
+        inputs = iter([
+            'testuser1',  # signup
+            'testuser1',  # login
+            'I love the stat interface!'  # feedback
+        ])
+        original_input = __builtins__.input
+        __builtins__.input = lambda _: next(inputs)
 
-    logged_in_user = loginFunction(mock_connection)
-    assert logged_in_user == 'testuser1'
-    mock_cursor.execute.assert_called_with('SELECT userid FROM "User Info" WHERE userid = %s', ('testuser1',))
+        try:
+            # ---- SIGNUP ----
+            user_id = signupFunction(self.conn)
+            self.assertEqual(user_id, 'testuser1')
 
-    # -------- ADD FEEDBACK --------
-    monkeypatch.setattr('builtins.input', lambda _: 'I love the stat interface!')
-    result = addFeedback(mock_connection, 'testuser1')
-    assert result is True
-    mock_cursor.execute.assert_any_call(
-        'INSERT INTO "User Info" (userid, feedback) VALUES (%s, %s)',
-        ('testuser1', 'I love the stat interface!')
-    )
-    mock_connection.commit.assert_called()
+            # ---- LOGIN ----
+            logged_in_user = loginFunction(self.conn)
+            self.assertEqual(logged_in_user, 'testuser1')
+
+            # ---- ADD FEEDBACK ----
+            result = addFeedback(self.conn, 'testuser1')
+            self.assertTrue(result)
+
+            # Verify feedback was stored
+            self.cursor.execute('SELECT feedback FROM "User Info" WHERE userid = %s', ('testuser1',))
+            feedback = self.cursor.fetchone()
+            self.assertIsNotNone(feedback)
+            self.assertIn('I love the stat interface!', feedback[0])
+
+        finally:
+            __builtins__.input = original_input
