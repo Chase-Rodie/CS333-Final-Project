@@ -15,9 +15,10 @@ def test_add_feedback_success(monkeypatch):
 
     assert result is True
     mock_cursor.execute.assert_called_with(
-        'INSERT INTO "User Info" (userid, feedback) VALUES (%s, %s)',
-        ('user123', 'Add WNBA stats please!')
+    'UPDATE "User Info" SET feedback = %s WHERE userid = %s',
+    ('Add WNBA stats please!', 'user123')
     )
+
     mock_connection.commit.assert_called_once()
     mock_cursor.close.assert_called_once()
 
