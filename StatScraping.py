@@ -254,7 +254,7 @@ def main():
     try:
         while True:
             print("----------------------------")
-            print("Welcome to the NBA Database!\n")
+            print("Welcome to the NBA Stats!\n")
             print("Please login to view the database.\n")
             print("1. Login")
             print("2. Sign up")
