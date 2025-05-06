@@ -233,18 +233,18 @@ def addFeedback(connection, userid):
     cursor = None
     try:
         cursor = connection.cursor()
-        while True:
-            feedback = input("What feedback would you like to give the database as far as future info you want to see?: ").strip()
-            cursor.execute('INSERT INTO "User Info" (userid, feedback) VALUES (%s, %s)', (userid, feedback,))
-            connection.commit()
-            print("Feedback added successfully!")
-            return True  
+        feedback = input("What feedback would you like to give the database as far as future info you want to see?: ").strip()
+        cursor.execute('UPDATE "User Info" SET feedback = %s WHERE userid = %s', (feedback, userid))
+        connection.commit()
+        print("Feedback added successfully!")
+        return True  
     except psycopg2.Error as error:
         print(f"Error adding feedback: {error}")
         return False 
     finally:
         if cursor:
             cursor.close()
+
 
 #main function for logic and user menu/function calls
 def main():

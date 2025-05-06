@@ -1,5 +1,6 @@
 import os
 import psycopg2
+import builtins
 import unittest
 from StatScraping import loginFunction, regularStatDisplay
 
@@ -23,11 +24,13 @@ class TestStatFlowIntegration(unittest.TestCase):
         # Insert player stat
         self.cursor.execute(
             '''
-            INSERT INTO "Regular Season Stats 23-24" ("RANK", "PLAYER", "TEAM", "PTS", "REB", "AST")
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO "Regular Season Stats 23-24" (
+                "PLAYER_ID", "RANK", "PLAYER", "TEAM_ID", "TEAM", "PTS", "REB", "AST"
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT DO NOTHING
             ''',
-            (1, 'LeBron James', 'LAL', 28.5, 7.2, 8.1)
+            (999, 1, 'LeBron James', 999, 'LAL', 28.5, 7.2, 8.1)
         )
 
         self.conn.commit()
@@ -42,8 +45,8 @@ class TestStatFlowIntegration(unittest.TestCase):
     def test_login_and_stat_display(self):
         # Simulate login input
         input_sequence = iter(['lebron23', 'LeBron James', 'no'])
-        original_input = __builtins__.input
-        __builtins__.input = lambda _: next(input_sequence)
+        original_input = builtins.input
+        builtins.input = lambda _: next(input_sequence)
 
         try:
             user = loginFunction(self.conn)
@@ -52,5 +55,5 @@ class TestStatFlowIntegration(unittest.TestCase):
             result = regularStatDisplay(self.conn)
             self.assertTrue(result)
         finally:
-            __builtins__.input = original_input
+            builtins.input = original_input
 

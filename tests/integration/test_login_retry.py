@@ -7,10 +7,11 @@ def test_login_retry_real_db(monkeypatch):
     connection = psycopg2.connect(
         host="localhost",
         port=5432,
-        database="your_test_db",
-        user="your_test_user",
-        password="your_test_password"
+        database="testdb",
+        user="testuser",
+        password="testpass"
     )
+
 
     cursor = connection.cursor()
     cursor.execute('DELETE FROM "User Info" WHERE userid IN (%s, %s)', ('wronguser', 'gooduser'))

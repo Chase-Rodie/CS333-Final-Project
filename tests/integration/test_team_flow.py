@@ -1,6 +1,7 @@
 import os
 import psycopg2
 import unittest
+import builtins
 from StatScraping import loginFunction, teamStatDisplay
 
 class TestTeamFlowIntegration(unittest.TestCase):
@@ -40,9 +41,9 @@ class TestTeamFlowIntegration(unittest.TestCase):
         self.conn.close()
 
     def test_login_and_team_stat_display(self):
-        input_sequence = iter(['nbaFan99', 'Los Angeles Lakers', 'no'])
-        original_input = __builtins__.input
-        __builtins__.input = lambda _: next(input_sequence)
+        inputs = iter(['nbaFan99', 'Los Angeles Lakers', 'no'])
+        original_input = builtins.input
+        builtins.input = lambda _: next(inputs)
 
         try:
             user = loginFunction(self.conn)
@@ -51,5 +52,7 @@ class TestTeamFlowIntegration(unittest.TestCase):
             result = teamStatDisplay(self.conn)
             self.assertTrue(result)
         finally:
-            __builtins__.input = original_input
+            builtins.input = original_input
+
+
 

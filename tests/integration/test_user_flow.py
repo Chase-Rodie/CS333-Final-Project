@@ -1,6 +1,7 @@
 import os
 import psycopg2
 import unittest
+import builtins
 from StatScraping import signupFunction, loginFunction, addFeedback
 
 class TestUserFlowIntegration(unittest.TestCase):
@@ -13,8 +14,6 @@ class TestUserFlowIntegration(unittest.TestCase):
             password=os.getenv("DB_PASSWORD", "testpass")
         )
         self.cursor = self.conn.cursor()
-
-        # Clean up just in case
         self.cursor.execute('DELETE FROM "User Info" WHERE userid = %s', ('testuser1',))
         self.conn.commit()
 
@@ -25,14 +24,13 @@ class TestUserFlowIntegration(unittest.TestCase):
         self.conn.close()
 
     def test_signup_login_add_feedback(self):
-        # Simulate user inputs for signup, login, feedback
         inputs = iter([
-            'testuser1',  # signup
-            'testuser1',  # login
-            'I love the stat interface!'  # feedback
+            'testuser1',
+            'testuser1',
+            'I love the stat interface!'
         ])
-        original_input = __builtins__.input
-        __builtins__.input = lambda _: next(inputs)
+        original_input = builtins.input
+        builtins.input = lambda _: next(inputs)
 
         try:
             # ---- SIGNUP ----
@@ -54,4 +52,4 @@ class TestUserFlowIntegration(unittest.TestCase):
             self.assertIn('I love the stat interface!', feedback[0])
 
         finally:
-            __builtins__.input = original_input
+            builtins.input = original_input

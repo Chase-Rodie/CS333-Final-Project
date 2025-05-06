@@ -1,6 +1,7 @@
 import os
 import psycopg2
 import unittest
+from unittest.mock import patch
 from StatScraping import loginFunction, matchupStatDisplay
 
 class TestMatchupIntegration(unittest.TestCase):
@@ -34,13 +35,12 @@ class TestMatchupIntegration(unittest.TestCase):
         self.conn.close()
 
     def test_login_and_matchup_display(self):
-        # Simulate login
-        os.environ["PYTHON_INPUT"] = "courtVision"  # Not standard; monkeypatch or refactor if needed
+        input_sequence = iter(['courtVision', 'Wed Apr 24 2024', 'no'])
 
-        user = loginFunction(self.conn)
-        self.assertEqual(user, 'courtVision')
+        with patch('builtins.input', lambda _: next(input_sequence)):
+            user = loginFunction(self.conn)
+            self.assertEqual(user, 'courtVision')
 
-        # Simulate matchup display
-        result = matchupStatDisplay(self.conn)
-        self.assertTrue(result)
+            result = matchupStatDisplay(self.conn)
+            self.assertTrue(result)
 
