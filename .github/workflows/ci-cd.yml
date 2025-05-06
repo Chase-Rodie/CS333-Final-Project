@@ -53,6 +53,12 @@ jobs:
             sleep 2
           done
 
+      - name: Load schema into test database
+        run: |
+          psql -h localhost -U $DB_USER -d $DB_NAME -f db/SchemaBackupPart4
+        env:
+          PGPASSWORD: ${{ env.DB_PASSWORD }}
+
       - name: Run tests with coverage
         run: PYTHONPATH=. pytest --cov=. --cov-report=xml
 
@@ -72,4 +78,3 @@ jobs:
         with:
           name: deployed-package
           path: deploy/project.zip
-
